@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Chord Player</title>
+	<style>
+        :root {
+            --bg: #111827;
+            --surface: #1f2937;
+            --primary: #8b5cf6;
+            --secondary: #ec4899;
+            --accent: #10b981;
+            --text: #f3f4f6;
+            --card-bg: #374151;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-weight: 800;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+        }
+
+        /* --- Controls --- */
+        .control-panel {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, filter 0.2s;
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); }
+
+        .btn-play { background: var(--accent); }
+        .btn-stop { background: #ef4444; display: none; }
+        .btn-clear { background: #4b5563; }
+        .btn-preset { background: var(--primary); }
+
+        select {
+            padding: 12px;
+            border-radius: 8px;
+            background: #111827;
+            color: white;
+            border: 1px solid #4b5563;
+        }
+
+        /* --- Chord Grid --- */
+        .timeline-container {
+            width: 100%;
+            overflow-x: auto;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .chord-grid {
+            display: flex;
+            gap: 10px;
+            min-height: 140px;
+            align-items: flex-start;
+        }
+
+        .chord-card {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 100px;
+            position: relative;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .chord-card.active {
+            border-color: var(--secondary);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+            transform: scale(1.05);
+            background: #4b5563;
+        }
+
+        .chord-card select {
+            width: 100%;
+            padding: 5px;
+            font-size: 0.9rem;
+            background: #1f2937;
+            border: none;
+        }
+
+        .remove-btn {
+            background: transparent;
+            color: #9ca3af;
+            padding: 2px;
+            font-size: 12px;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: auto;
+            min-width: 0;
+        }
+        .remove-btn:hover { color: #ef4444; transform: none; }
+
+        .add-chord-btn {
+            height: 120px;
+            width: 60px;
+            background: rgba(255,255,255,0.05);
+            border: 2px dashed #4b5563;
+            color: #9ca3af;
+            font-size: 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+        }
+        .add-chord-btn:hover { background: rgba(255,255,255,0.1); color: white; }
+
+        /* --- Visualizer --- */
+        #viz {
+            width: 100%;
+            max-width: 800px;
+            height: 60px;
+            background: #111;
+            margin-top: 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+            overflow: hidden;
+        }
+        .bar { width: 10px; background: var(--secondary); opacity: 0.6; transition: height 0.05s; }
+
+	</style>
+</head>
+<body>
+
+<h1>Chord Player</h1>
+
+<div class="control-panel">
+	<button id="playBtn" class="btn-play">▶ Play Sequence</button>
+	<button id="stopBtn" class="btn-stop">■ Stop</button>
+
+	<select id="presetSelect">
+		<option value="">✨ Smart Generator / Presets</option>
+		<option value="pop">Pop Hit (I-V-vi-IV)</option>
+		<option value="jazz">Jazz Standard (ii-V-I)</option>
+		<option value="neosoul">Neo-Soul (Complex 7ths)</option>
+		<option value="creepy">Dark/Diminished</option>
+		<option value="emotional">Emotional Ballad</option>
+	</select>
+	<button id="applyPresetBtn" class="btn-preset">Load</button>
+
+	<button id="clearBtn" class="btn-clear">Clear All</button>
+
+	<div style="display:flex; align-items:center; gap:5px; margin-left:10px;">
+		<span style="font-size:0.8rem">BPM:</span>
+		<input type="range" id="bpmSlider" min="60" max="160" value="100">
+		<span id="bpmDisplay" style="font-size:0.8rem; width:30px;">100</span>
+	</div>
+</div>
+
+<div class="timeline-container">
+	<div class="chord-grid" id="chordGrid">
+		<!-- Chord Cards go here -->
+		<button class="add-chord-btn" id="addChordBtn">+</button>
+	</div>
+</div>
+
+<div id="viz"></div>
+
+	<script type="module" src="/src/main.js"></script>
+</body>
+</html>
